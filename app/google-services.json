@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "736225665929",
+    "project_id": "clothingtracker-36e43",
+    "storage_bucket": "clothingtracker-36e43.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:736225665929:android:6562aa660b2b589cb97758",
+        "android_client_info": {
+          "package_name": "com.paez.clothingtrackerapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDPmxUwI3dcWJ1PxVzZQRx2Pk1yFOxBuk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
