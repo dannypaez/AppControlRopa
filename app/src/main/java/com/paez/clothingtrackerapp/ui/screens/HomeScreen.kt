@@ -1,4 +1,4 @@
-package com.paez.clothingtrackerapp
+package com.paez.clothingtrackerapp.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -18,44 +18,20 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.paez.clothingtrackerapp.data.model.ClothingItem
+import com.paez.clothingtrackerapp.viewmodel.ClothingViewModel
 
 @Composable
 fun HomeScreen(
+    clothingViewModel: ClothingViewModel, // Pasar ClothingViewModel
     onAddClothingClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onClothingSelected: (ClothingItem) -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    val db = FirebaseFirestore.getInstance()
-    var clothingItems by remember { mutableStateOf<List<ClothingItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val clothingItems by clothingViewModel.clothingItems.collectAsState() // Observa el flujo de prendas
     var selectedCategory by remember { mutableStateOf("Todas") }
     val categories = listOf("Todas", "Saco", "Chompa", "Camiseta", "Pantalón", "Otro")
     var expanded by remember { mutableStateOf(false) }
-
-    // Listener para cambios en tiempo real
-    DisposableEffect(Unit) {
-        isLoading = true
-        val listener: ListenerRegistration = db.collection("ropa")
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    isLoading = false
-                    return@addSnapshotListener
-                }
-
-                if (snapshot != null && !snapshot.isEmpty) {
-                    val items = snapshot.documents.mapNotNull { document ->
-                        document.toObject(ClothingItem::class.java)?.copy(id = document.id)
-                    }
-                    clothingItems = items
-                }
-                isLoading = false
-            }
-
-        onDispose {
-            listener.remove()
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -112,16 +88,17 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Filtrar las prendas según la categoría seleccionada
+        val filteredClothingItems = if (selectedCategory == "Todas") {
+            clothingItems
+        } else {
+            clothingItems.filter { it.categoría == selectedCategory }
+        }
+
         // Mostrar indicador de carga o la lista de prendas
-        if (isLoading) {
+        if (clothingItems.isEmpty()) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         } else {
-            val filteredClothingItems = if (selectedCategory == "Todas") {
-                clothingItems
-            } else {
-                clothingItems.filter { it.categoría == selectedCategory }
-            }
-
             if (filteredClothingItems.isNotEmpty()) {
                 // Lista de prendas
                 LazyColumn(
