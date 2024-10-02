@@ -1,4 +1,4 @@
-package com.paez.clothingtrackerapp
+package com.paez.clothingtrackerapp.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
