@@ -1,4 +1,4 @@
-package com.paez.clothingtrackerapp
+package com.paez.clothingtrackerapp.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -11,24 +11,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.launch
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.paez.clothingtrackerapp.R
+import com.paez.clothingtrackerapp.viewmodel.AuthViewModel
 
 @Composable
-fun AuthScreen(auth: FirebaseAuth, onAuthSuccess: () -> Unit) {
+fun AuthScreen(
+    onAuthSuccess: () -> Unit,
+    authViewModel: AuthViewModel = hiltViewModel() // Usar Hilt para obtener el ViewModel
+) {
     var email by remember { mutableStateOf(TextFieldValue("")) }
     var password by remember { mutableStateOf(TextFieldValue("")) }
     var isLoginMode by remember { mutableStateOf(true) } // Modo Login/Registro
-    var errorMessage by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -40,7 +40,7 @@ fun AuthScreen(auth: FirebaseAuth, onAuthSuccess: () -> Unit) {
     ) {
         // Logo de la app o imagen decorativa
         Image(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground), // Reemplaza con tu logo
+            painter = painterResource(id = R.drawable.ic_launcher_foreground),
             contentDescription = "Logo",
             modifier = Modifier.size(120.dp)
         )
@@ -84,9 +84,9 @@ fun AuthScreen(auth: FirebaseAuth, onAuthSuccess: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Mostrar mensaje de error si lo hay
-        if (errorMessage.isNotEmpty()) {
+        if (authViewModel.errorMessage.value.isNotEmpty()) {
             Text(
-                text = errorMessage,
+                text = authViewModel.errorMessage.value,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(8.dp)
             )
@@ -94,32 +94,17 @@ fun AuthScreen(auth: FirebaseAuth, onAuthSuccess: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Botón de Login o Registro con ícono
+        // Botón de Login o Registro
         Button(
             onClick = {
-                loading = true
-                coroutineScope.launch {
-                    if (isLoginMode) {
-                        loginUser(auth, email.text, password.text, onSuccess = {
-                            loading = false
-                            onAuthSuccess()
-                        }, onError = {
-                            loading = false
-                            errorMessage = it
-                        })
-                    } else {
-                        registerUser(auth, email.text, password.text, onSuccess = {
-                            loading = false
-                            onAuthSuccess()
-                        }, onError = {
-                            loading = false
-                            errorMessage = it
-                        })
-                    }
+                if (isLoginMode) {
+                    authViewModel.loginUser(email.text, password.text, onAuthSuccess)
+                } else {
+                    authViewModel.registerUser(email.text, password.text, onAuthSuccess)
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !loading,
+            enabled = !authViewModel.loading.value,
             colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary)
         ) {
             Text(text = if (isLoginMode) "Iniciar sesión" else "Registrarse", fontSize = 18.sp)
@@ -136,7 +121,7 @@ fun AuthScreen(auth: FirebaseAuth, onAuthSuccess: () -> Unit) {
         }
 
         // Indicador de carga mientras se realiza una operación
-        if (loading) {
+        if (authViewModel.loading.value) {
             CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
         }
     }
