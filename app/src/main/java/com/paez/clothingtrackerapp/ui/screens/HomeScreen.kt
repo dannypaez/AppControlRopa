@@ -30,7 +30,7 @@ fun HomeScreen(
 ) {
     val clothingItems by clothingViewModel.clothingItems.collectAsState() // Observa el flujo de prendas
     var selectedCategory by remember { mutableStateOf("Todas") }
-    val categories = listOf("Todas", "Saco", "Chompa", "Camiseta", "Pantalón", "Otro")
+    val categories = listOf("Todas", "Saco", "Chompa", "Camiseta", "Pantalón", "Chaleco","Zapato","Otro")
     var expanded by remember { mutableStateOf(false) }
 
     Column(
@@ -95,26 +95,33 @@ fun HomeScreen(
             clothingItems.filter { it.categoría == selectedCategory }
         }
 
-        // Mostrar indicador de carga o la lista de prendas
-        if (clothingItems.isEmpty()) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        } else {
-            if (filteredClothingItems.isNotEmpty()) {
-                // Lista de prendas
+        // Mostrar lista de prendas o mensaje si no hay prendas
+        when {
+            clothingItems.isEmpty() -> {
+                // Mostrar mensaje si no hay prendas
+                Text(
+                    text = "No tienes prendas registradas.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            filteredClothingItems.isNotEmpty() -> {
+                // Mostrar lista de prendas
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(2f)
                 ) {
                     items(filteredClothingItems) { item ->
-                        // Aquí asegúrate de pasar el objeto `item` correctamente
                         ClothingItemRow(item, onClick = { onClothingSelected(item) })
                     }
                 }
-
-            } else {
+            }
+            else -> {
+                // Mostrar mensaje si no hay prendas en la categoría seleccionada
                 Text(
                     text = "No tienes prendas registradas en la categoría $selectedCategory.",
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }

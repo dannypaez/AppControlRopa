@@ -42,7 +42,7 @@ fun AddClothingScreen(
     var errorMessage by remember { mutableStateOf("") }
 
     // Predefinidas categorías
-    val categories = listOf("Saco", "Chompa", "Camiseta", "Pantalón", "Otro")
+    val categories = listOf("Todas", "Saco", "Chompa", "Camiseta", "Pantalón", "Chaleco","Zapato","Otro")
     var expanded by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
