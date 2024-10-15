@@ -103,5 +103,9 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.48")   // Asegúrate de tener la misma versión en Hilt Compiler
 
 
+    implementation("androidx.exifinterface:exifinterface:1.3.6")
+
+
+
 }
 

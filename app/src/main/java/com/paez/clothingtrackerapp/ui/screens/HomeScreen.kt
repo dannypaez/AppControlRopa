@@ -107,9 +107,11 @@ fun HomeScreen(
                         .weight(2f)
                 ) {
                     items(filteredClothingItems) { item ->
+                        // Aquí asegúrate de pasar el objeto `item` correctamente
                         ClothingItemRow(item, onClick = { onClothingSelected(item) })
                     }
                 }
+
             } else {
                 Text(
                     text = "No tienes prendas registradas en la categoría $selectedCategory.",

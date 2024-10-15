@@ -14,6 +14,7 @@ import com.paez.clothingtrackerapp.ui.screens.HomeScreen
 import com.paez.clothingtrackerapp.viewmodel.AuthViewModel
 import com.paez.clothingtrackerapp.viewmodel.ClothingViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.paez.clothingtrackerapp.data.model.ClothingItem
 import com.paez.clothingtrackerapp.ui.AuthScreen
 
 @Composable
@@ -38,15 +39,16 @@ fun MainApp() {
         // Pantalla principal
         composable("home") {
             HomeScreen(
-                clothingViewModel = clothingViewModel, // Pasar el ClothingViewModel
+                clothingViewModel = clothingViewModel,
                 onAddClothingClick = { navController.navigate("add_clothing") },
                 onLogoutClick = {
-                    authViewModel.logoutUser() // Usa el ViewModel para cerrar sesión
+                    authViewModel.logoutUser()
                     navController.navigate("auth") {
                         popUpTo("home") { inclusive = true }
                     }
                 },
                 onClothingSelected = { selectedItem ->
+                    // Navegar con el ID de la prenda seleccionada
                     navController.navigate("details/${selectedItem.id}")
                 }
             )
@@ -55,6 +57,7 @@ fun MainApp() {
         // Pantalla de añadir prenda
         composable("add_clothing") {
             AddClothingScreen(
+                clothingViewModel = clothingViewModel, // Pasar el ClothingViewModel
                 onClothingAdded = {
                     navController.popBackStack() // Navegar de regreso cuando se añada la prenda
                 },
@@ -73,13 +76,22 @@ fun MainApp() {
                 return@composable
             }
 
-            // Usa el ClothingViewModel para obtener el ítem
-            val selectedClothingItem by clothingViewModel.getClothingItemById(clothingId).collectAsState(initial = null)
+            // Cargar la prenda utilizando la nueva función del ViewModel
+            LaunchedEffect(clothingId) {
+                clothingViewModel.loadClothingItemById(clothingId)
+            }
+
+            val selectedClothingItem by clothingViewModel.selectedClothingItem.collectAsState()
 
             if (selectedClothingItem == null) {
+                // Muestra un indicador de carga mientras se busca la prenda
                 CircularProgressIndicator(modifier = Modifier.fillMaxSize())
             } else {
-                ClothingDetailScreen(clothingItem = selectedClothingItem!!, onBackClick = { navController.popBackStack() })
+                // Si la prenda fue encontrada, mostramos la pantalla de detalles
+                ClothingDetailScreen(
+                    clothingId = clothingId,  // Pasar el ID de la prenda
+                    onBackClick = { navController.popBackStack() }
+                )
             }
         }
     }
