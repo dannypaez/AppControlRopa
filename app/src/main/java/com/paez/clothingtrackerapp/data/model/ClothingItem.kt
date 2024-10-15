@@ -1,4 +1,4 @@
-package com.paez.clothingtrackerapp
+package com.paez.clothingtrackerapp.data.model
 
 data class ClothingItem(
     val id: String = "",

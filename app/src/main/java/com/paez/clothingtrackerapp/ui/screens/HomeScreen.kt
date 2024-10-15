@@ -1,4 +1,4 @@
-package com.paez.clothingtrackerapp
+package com.paez.clothingtrackerapp.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -18,44 +18,20 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.paez.clothingtrackerapp.data.model.ClothingItem
+import com.paez.clothingtrackerapp.viewmodel.ClothingViewModel
 
 @Composable
 fun HomeScreen(
+    clothingViewModel: ClothingViewModel, // Pasar ClothingViewModel
     onAddClothingClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onClothingSelected: (ClothingItem) -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    val db = FirebaseFirestore.getInstance()
-    var clothingItems by remember { mutableStateOf<List<ClothingItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val clothingItems by clothingViewModel.clothingItems.collectAsState() // Observa el flujo de prendas
     var selectedCategory by remember { mutableStateOf("Todas") }
-    val categories = listOf("Todas", "Saco", "Chompa", "Camiseta", "Pantalón", "Otro")
+    val categories = listOf("Todas", "Saco", "Chompa", "Camiseta", "Pantalón", "Chaleco","Zapato","Otro")
     var expanded by remember { mutableStateOf(false) }
-
-    // Listener para cambios en tiempo real
-    DisposableEffect(Unit) {
-        isLoading = true
-        val listener: ListenerRegistration = db.collection("ropa")
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    isLoading = false
-                    return@addSnapshotListener
-                }
-
-                if (snapshot != null && !snapshot.isEmpty) {
-                    val items = snapshot.documents.mapNotNull { document ->
-                        document.toObject(ClothingItem::class.java)?.copy(id = document.id)
-                    }
-                    clothingItems = items
-                }
-                isLoading = false
-            }
-
-        onDispose {
-            listener.remove()
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -112,18 +88,25 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Mostrar indicador de carga o la lista de prendas
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        // Filtrar las prendas según la categoría seleccionada
+        val filteredClothingItems = if (selectedCategory == "Todas") {
+            clothingItems
         } else {
-            val filteredClothingItems = if (selectedCategory == "Todas") {
-                clothingItems
-            } else {
-                clothingItems.filter { it.categoría == selectedCategory }
-            }
+            clothingItems.filter { it.categoría == selectedCategory }
+        }
 
-            if (filteredClothingItems.isNotEmpty()) {
-                // Lista de prendas
+        // Mostrar lista de prendas o mensaje si no hay prendas
+        when {
+            clothingItems.isEmpty() -> {
+                // Mostrar mensaje si no hay prendas
+                Text(
+                    text = "No tienes prendas registradas.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            filteredClothingItems.isNotEmpty() -> {
+                // Mostrar lista de prendas
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -133,9 +116,12 @@ fun HomeScreen(
                         ClothingItemRow(item, onClick = { onClothingSelected(item) })
                     }
                 }
-            } else {
+            }
+            else -> {
+                // Mostrar mensaje si no hay prendas en la categoría seleccionada
                 Text(
                     text = "No tienes prendas registradas en la categoría $selectedCategory.",
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }

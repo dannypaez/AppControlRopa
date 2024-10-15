@@ -1,4 +1,4 @@
-package com.paez.clothingtrackerapp
+package com.paez.clothingtrackerapp.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -21,31 +21,28 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.content.*
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
+import com.paez.clothingtrackerapp.viewmodel.ClothingViewModel
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.*
 
 @Composable
 fun AddClothingScreen(
+    clothingViewModel: ClothingViewModel,
     onClothingAdded: () -> Unit,
-    onBackClick: () -> Unit // Nueva función para manejar el evento de volver atrás
+    onBackClick: () -> Unit
 ) {
-    val db = FirebaseFirestore.getInstance()
-    val storage = FirebaseStorage.getInstance().reference
     var clothingName by remember { mutableStateOf(TextFieldValue("")) }
     var selectedCategory by remember { mutableStateOf("Selecciona una categoría") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    var imageUrl by remember { mutableStateOf("") }
-    val coroutineScope = rememberCoroutineScope()
     var isUploading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
     // Predefinidas categorías
-    val categories = listOf("Saco", "Chompa", "Camiseta", "Pantalón", "Otro")
+    val categories = listOf("Todas", "Saco", "Chompa", "Camiseta", "Pantalón", "Chaleco","Zapato","Otro")
     var expanded by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -87,6 +84,8 @@ fun AddClothingScreen(
             cameraImageUri = FileProvider.getUriForFile(context, "${context.packageName}.provider", this)
         }
     }
+
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -158,7 +157,7 @@ fun AddClothingScreen(
         // Botón para tomar una foto con la cámara con ícono
         Button(onClick = {
             if (hasCameraPermission) {
-                val photoFile = createImageFile()
+                createImageFile()
                 takePictureLauncher.launch(cameraImageUri)
             } else {
                 requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
@@ -201,40 +200,20 @@ fun AddClothingScreen(
                 coroutineScope.launch {
                     if (clothingName.text.isNotEmpty() && selectedCategory != "Selecciona una categoría" && imageUri != null) {
                         isUploading = true
-                        val imageRef = storage.child("clothing_images/${UUID.randomUUID()}")
-                        val uploadTask = imageRef.putFile(imageUri!!)
-                        uploadTask.continueWithTask { task ->
-                            if (!task.isSuccessful) {
-                                throw task.exception ?: Exception("Error en la subida")
-                            }
-                            imageRef.downloadUrl
-                        }.addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                val downloadUri = task.result
-                                imageUrl = downloadUri.toString()
-
-                                // Guardar los detalles de la prenda en Firestore
-                                val clothingData = hashMapOf(
-                                    "nombre" to clothingName.text,
-                                    "categoría" to selectedCategory,
-                                    "imagenUrl" to imageUrl,
-                                    "vecesPuesto" to 0
-                                )
-                                db.collection("ropa")
-                                    .add(clothingData)
-                                    .addOnSuccessListener {
-                                        isUploading = false
-                                        onClothingAdded()
-                                    }
-                                    .addOnFailureListener {
-                                        isUploading = false
-                                        errorMessage = "Error al añadir la prenda: ${it.message}"
-                                    }
-                            } else {
+                        clothingViewModel.addClothingItemWithImage(
+                            context,
+                            clothingName.text,
+                            selectedCategory,
+                            imageUri!!,
+                            onSuccess = {
                                 isUploading = false
-                                errorMessage = "Error al subir la imagen"
+                                onClothingAdded()
+                            },
+                            onError = { error ->
+                                isUploading = false
+                                errorMessage = error
                             }
-                        }
+                        )
                     } else {
                         errorMessage = "Por favor, completa todos los campos y selecciona una imagen."
                     }
